@@ -1,0 +1,10 @@
+chunk_tokens: 384
+fusion: rrf
+rrf_k: 60
+rerank_top: 50
+answer_top: 8
+max_rounds: 3
+abstain_threshold: 0.35   # reranker score below which a passage is not treated as evidence
+dense: BAAI/bge-m3
+reranker: hanaml/rerank-m
+model: Qwen/Qwen3-32B
