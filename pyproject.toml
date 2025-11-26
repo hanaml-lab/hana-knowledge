@@ -1,0 +1,33 @@
+# Workspace root. Each package under packages/ is its own distribution; this file holds the
+# shared tool settings and the uv workspace that installs them together.
+[project]
+name = "hana-knowledge-workspace"
+version = "0.5.0"
+requires-python = ">=3.10"
+dependencies = ["hana-knowledge", "retrieval-kit", "graph-memory", "cite-check"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6", "duckdb>=1.0"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/retrieval-kit", "packages/graph-memory", "packages/cite-check", "packages/hana-knowledge"]
+
+[tool.uv.sources]
+retrieval-kit = { workspace = true }
+graph-memory = { workspace = true }
+cite-check = { workspace = true }
+hana-knowledge = { workspace = true }
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B905"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["retrieval_kit", "graph_memory", "cite_check", "hana_knowledge"]
