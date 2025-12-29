@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "graph-memory"
+version = "0.4.1"
+description = "Long-term memory for agents as a bitemporal knowledge graph."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "hanaML", email = "hello@hanaml.com" }]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26"]
+keywords = ["memory", "knowledge-graph", "agents"]
+
+[project.optional-dependencies]
+neo4j = ["neo4j>=5.20"]
+qdrant = ["qdrant-client>=1.12"]
+embed = ["sentence-transformers>=3.0"]
+leiden = ["igraph>=0.11", "leidenalg>=0.10"]
+all = ["graph-memory[neo4j,qdrant,embed,leiden]"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.urls]
+Repository = "https://github.com/hanaml-lab/graph-memory"
+
+[tool.hatch.build.targets.wheel]
+packages = ["graph_memory"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
