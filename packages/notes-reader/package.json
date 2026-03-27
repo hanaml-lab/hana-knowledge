@@ -1,0 +1,20 @@
+{
+  "name": "@hanaml/notes-reader",
+  "version": "0.4.1",
+  "description": "Read the graph-memory dated-notes export",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": "./src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hanaml-lab/graph-memory.git",
+    "directory": "packages/notes-reader"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
