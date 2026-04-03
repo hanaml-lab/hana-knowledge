@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cite-check"
+version = "0.4.0"
+description = "Splits a generated report into claims, checks each against its sources, and recomputes every figure in code."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "hanaML", email = "hello@hanaml.com" }]
+requires-python = ">=3.10"
+dependencies = ["retrieval-kit"]
+
+[project.optional-dependencies]
+models = ["transformers>=4.44", "torch>=2.3"]
+sql = ["duckdb>=1.0"]
+
+[project.scripts]
+cite-check = "cite_check.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cite_check"]
