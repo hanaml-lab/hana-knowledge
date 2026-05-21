@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (2026-05-21)
+
+- graph-memory notes export and TypeScript reader
+- cite-check claims, units and recomputed figures
+
 ## 0.2.0 (2026-03-26)
 
 - graph-memory: bitemporal knowledge-graph memory with in-process, Neo4j and Qdrant stores
