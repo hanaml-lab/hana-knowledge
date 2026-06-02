@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0 (2026-06-02)
+
+- cite-check: verify-and-revise pass and CLI
+
 ## 0.3.0 (2026-05-21)
 
 - graph-memory notes export and TypeScript reader
