@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hana-knowledge"
+version = "0.5.0"
+description = "Grounded answers over documents: retrieval, temporal memory and citation checks in one pipeline."
+license = "Apache-2.0"
+authors = [{ name = "hanaML", email = "hello@hanaml.com" }]
+requires-python = ">=3.10"
+dependencies = ["retrieval-kit", "graph-memory", "cite-check"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["hana_knowledge"]
