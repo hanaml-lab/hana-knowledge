@@ -46,3 +46,54 @@ How the pieces connect:
   question with them before retrieval ("my employer" in February is not "my employer" in May).
 - Citations are `retrieval_kit.Citation` objects (document, page, character span); the pipeline renders them as
   `[doc, p. N]` markers, which is the format `cite-check` reads.
+
+## Quickstart
+
+```bash
+git clone https://github.com/hanaml-lab/hana-knowledge && cd hana-knowledge
+uv sync                                  # installs all packages into one environment
+uv run python examples/end_to_end.py     # the full pipeline, offline, on examples/filings/
+```
+
+```python
+from hana_knowledge import KnowledgeBase
+
+kb = KnowledgeBase("examples/filings")
+kb.remember("u42", "I work at Northwind Traders.", at="2026-01-10")
+kb.remember("u42", "I joined Harbour Logistics in March.", at="2026-04-02")
+
+answer = kb.ask("What was the operating margin of my employer?", user="u42", at="2026-05-01")
+print(answer.text)                       # The operating margin was 7.2% in the half year.
+print(answer.citations[0].doc, answer.verified)
+```
+
+Offline, the components fall back to dependency-free stand-ins (a hashing encoder, a term-overlap reranker, an
+extractive answerer, a lexical support check). For production quality, pass model names: `dense="BAAI/bge-m3"`,
+`reranker="hanaml/rerank-m"`, `model="Qwen/Qwen3-32B"` (served behind an OpenAI-compatible endpoint), and give
+`cite_check.Checker` an NLI model and the `hanaml/llama-cite-verify-3b` verifier. Each package README lists its
+extras.
+
+## Development
+
+```bash
+make test        # Python packages, the integration test, the Rust extension and the TypeScript reader
+make lint
+```
+
+Every package can also be tested on its own: `cd packages/<name> && uv run pytest`.
+
+## Related
+
+- Research: [agentic retrieval over contracts and filings](https://hanaml.com/research/agentic-rag-citations),
+  [temporal graph memory](https://hanaml.com/research/temporal-graph-memory),
+  [claim verification across evidence graphs](https://hanaml.com/research/checking-work-against-sources).
+- Papers: [Claim-level citation verification for agentic retrieval over financial filings](https://hanaml.com/research/papers/agentic-rag-citation-verification),
+  [Bitemporal knowledge graphs as long-term memory for assistants](https://hanaml.com/research/papers/temporal-graphrag-memory).
+- Models: [rerank-m](https://hanaml.com/models/rerank-m) (reranker),
+  [llama-cite-verify-3b](https://hanaml.com/models/llama-cite-verify-3b) (support verifier).
+- [hana-evals](https://github.com/hanaml-lab/hana-evals) measures these components;
+  [hana-agents](https://github.com/hanaml-lab/hana-agents) runs them as tools.
+
+## Licence
+
+Apache-2.0, except `packages/graph-memory` and `packages/notes-reader`, which are MIT. See the `LICENSE` file in each.
