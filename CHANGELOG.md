@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0 (2026-10-07)
+
+- hana_knowledge.KnowledgeBase ties memory, retrieval and verification together
+- end-to-end example
+
 ## 0.4.0 (2026-06-02)
 
 - cite-check: verify-and-revise pass and CLI
