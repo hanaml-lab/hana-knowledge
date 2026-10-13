@@ -9,6 +9,7 @@ from pathlib import Path
 
 from retrieval_kit.index.bm25 import BM25Index, tokenize
 from retrieval_kit.index.dense import DenseIndex, Encoder, HashingEncoder, load_encoder
+from retrieval_kit.index.sections import Outline, matches, reference
 
 __all__ = [
     "BM25Index", "Chunk", "DenseIndex", "Encoder", "HashingEncoder", "Index", "load_encoder", "tokenize",
@@ -19,7 +20,7 @@ _TOKEN = re.compile(r"\S+")
 
 @dataclass(frozen=True)
 class Chunk:
-    """A passage of a document, with its position in the page text."""
+    """A passage of a document, with its position in the page text and the path of its section."""
 
     id: int
     doc: str
@@ -27,6 +28,7 @@ class Chunk:
     start: int  # char offset into the page text
     end: int
     text: str
+    section: str = ""  # "ARTICLE 7 COVENANTS / 7.11 Financial covenants"; empty without headings
 
 
 def _read_pages(path: Path) -> list[str]:
@@ -93,11 +95,25 @@ class Index:
         chunks: list[Chunk] = []
         for path in files:
             doc = path.name if root.is_file() else str(path.relative_to(root))
+            outline = Outline()  # chunks follow the document's sections and never cross a heading
             for page_no, text in enumerate(_read_pages(path), start=1):
-                for start, end in chunk_page(text, chunk_tokens, overlap):
-                    chunks.append(Chunk(len(chunks), doc, page_no, start, end, text[start:end]))
+                for lo, hi, section in outline.sections(text):
+                    for start, end in chunk_page(text[lo:hi], chunk_tokens, overlap):
+                        chunks.append(Chunk(len(chunks), doc, page_no, lo + start, lo + end,
+                                            text[lo + start : lo + end], section))
         enc = load_encoder(encoder) if isinstance(encoder, str) else encoder
         return cls(chunks, enc)
+
+    def section(self, ref: str, doc: str | None = None) -> list[Chunk]:
+        """The chunks of the section a reference names: "Section 7.11", "Article VII", "clause 14.2", "7.11".
+
+        A section includes its subsections. Empty when no heading carries that number.
+        """
+        found = reference(ref)
+        if found is None:
+            return []
+        kind, label = found
+        return [c for c in self.chunks if (doc is None or c.doc == doc) and matches(c.section, kind, label)]
 
     def save(self, path: str | Path) -> None:
         Path(path).write_text("\n".join(json.dumps(asdict(c)) for c in self.chunks), encoding="utf-8")
