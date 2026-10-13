@@ -49,8 +49,9 @@ that needs no LLM.
 1. **Two indexes.** BM25 (Tantivy) finds exact terms such as ticker symbols and clause numbers; bge-m3 finds paraphrases.
 2. **Fusion.** Reciprocal-rank fusion (`k=60`) merges the two lists without tuning score scales.
 3. **Rerank.** A cross-encoder scores the top 50 fused passages against the question.
-4. **Agent rounds.** The model reads the top passages, then either answers, writes a follow-up query, or abstains. It stops after `max_rounds` or after a round that brings no new page.
-5. **Citations.** Each claim in the answer is tied to a character span. `cite.py` checks the span exists in the passage before the answer is returned.
+4. **Sections.** Documents are split at their headings (Markdown, `ARTICLE 7`, `Section 7.11`, `Note 14`, numbered clauses) before they are windowed, so a chunk never crosses a heading, and each chunk keeps a path such as `ARTICLE 7 COVENANTS / 7.11 Financial covenants`. `Index.section("Section 7.11")` returns a section with its subsections.
+5. **Agent rounds.** The model reads the top passages and takes one action: `search` (a follow-up query), `open_section` ("Article 7"), `follow_reference` ("as defined in Section 1.1"; a reference no heading carries becomes a search), `answer`, or abstain. It stops after `max_rounds` or after a round that brings nothing new. `Answer.actions` records the path it took.
+6. **Citations.** Each claim in the answer is tied to a character span. `cite.py` checks the span exists in the passage before the answer is returned. A claim whose quote is not in its passage triggers one more search with the claim itself; claims that still fail are dropped and listed in `Answer.unanswered`.
 
 ## Configuration
 
