@@ -1,6 +1,7 @@
 import pytest
 
-from cite_check.units import Quantity, close, mixed_currencies, parse
+from cite_check.nli import LexicalNLI
+from cite_check.units import Quantity, close, mixed_currencies, parse, same
 
 
 @pytest.mark.parametrize("text,value,unit", [
@@ -41,3 +42,24 @@ def test_convert():
 def test_close():
     assert close(100, 100.4)
     assert not close(100, 101)
+
+
+def test_same_quantity_converts_compatible_units():
+    tonnes = parse("1.8 million tonnes")[0]
+    assert same(tonnes, parse("1.8 billion kg")[0])
+    assert same(parse("5 miles")[0], parse("8.05 km")[0])
+    assert not same(parse("12 kg")[0], parse("12 km")[0])  # mass is never length
+    assert not same(parse("$12m")[0], parse("£12m")[0])  # currencies are not converted
+
+
+def test_more_physical_units_parse():
+    assert parse("3.5 litres")[0].unit == "liter"
+    assert same(parse("3,500 ml")[0], parse("3.5 litres")[0])
+    assert same(parse("2.4 GWh")[0], parse("2,400 MWh")[0])
+
+
+def test_support_check_reads_converted_figures():
+    passage = "Freight volumes rose 6% to 1.8 million tonnes."
+    judgement = LexicalNLI().judge("Freight volumes rose 6% to 1,800 million kg.", passage)
+    assert judgement.label == "supported"
+    assert LexicalNLI().judge("Freight volumes rose 6% to 1.8 million km.", passage).label == "contradicted"

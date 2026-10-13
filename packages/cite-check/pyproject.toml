@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 authors = [{ name = "hanaML", email = "hello@hanaml.com" }]
 requires-python = ">=3.10"
-dependencies = ["retrieval-kit"]
+dependencies = ["retrieval-kit", "pint>=0.24"]
 
 [project.optional-dependencies]
 models = ["transformers>=4.44", "torch>=2.3"]

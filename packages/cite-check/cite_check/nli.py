@@ -14,7 +14,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Protocol
 
-from cite_check.units import close, parse
+from cite_check.units import parse, same
 
 STOP = set("the a an of in on at to for and or was were is are be by with from as that this its it than".split())
 NEGATION = re.compile(r"\b(not|no|never|without|neither|nor|fell|declined|decreased|lower)\b", re.I)
@@ -48,7 +48,7 @@ class LexicalNLI:
         words = _content(claim)
         coverage = len(words & _content(passage)) / max(len(words), 1)
         claimed, found = parse(claim), parse(passage)
-        figures_ok = all(any(close(c.value, f.value) for f in found) for c in claimed)
+        figures_ok = all(any(same(c, f) for f in found) for c in claimed)
         figure_clash = bool(claimed) and not figures_ok and bool(found)
         polarity_clash = bool(NEGATION.search(claim)) != bool(NEGATION.search(passage)) and coverage > 0.6
         entail = coverage * (1.0 if figures_ok else 0.3)
