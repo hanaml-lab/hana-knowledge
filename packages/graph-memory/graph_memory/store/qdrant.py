@@ -18,10 +18,17 @@ class QdrantStore:
             raise ImportError('Qdrant support needs: pip install "graph-memory[qdrant]"') from exc
         self.models = models
         self.client = QdrantClient(url=url)
-        self.collection = collection
+        self.collection, self.dim = collection, dim
         if not self.client.collection_exists(collection):
-            self.client.create_collection(
-                collection, vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE))
+            self._create()
+
+    def _create(self) -> None:
+        self.client.create_collection(self.collection, vectors_config=self.models.VectorParams(
+            size=self.dim, distance=self.models.Distance.COSINE))
+
+    def clear(self) -> None:
+        self.client.delete_collection(self.collection)
+        self._create()
 
     def upsert(self, key: str, vector: np.ndarray, payload: dict) -> None:
         point_id = str(uuid.uuid5(uuid.NAMESPACE_URL, key))

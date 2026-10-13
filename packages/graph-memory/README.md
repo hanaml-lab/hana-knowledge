@@ -49,6 +49,15 @@ After the two calls above the graph holds two versions of the Leeds fact:
 "Where does the user live?" reads the current version. "What did we believe on 5 April?" reads the first row,
 because on that day it was recorded and not yet retracted.
 
+### Deleting an episode
+
+Corrections retract; deletions remove. `memory.delete(user="u42", text="I moved to Leeds in March.")` deletes
+that turn and rebuilds everything derived from it by replaying the remaining turns in order: the Leeds edge,
+the edge it closed (Manchester is open again), entities only it mentioned, their vectors and the community
+summaries over them. `memory.epoch` counts deletions and every `Recall` carries the epoch it was built in, so a
+summary built before a deletion is never served after it. A store that holds facts from turns this `Memory`
+never saw (opened from another process) is not rebuilt; `delete` raises instead.
+
 ## How it works
 
 - **Extract.** A small model turns each turn into entities and dated relations, constrained to a JSON schema.

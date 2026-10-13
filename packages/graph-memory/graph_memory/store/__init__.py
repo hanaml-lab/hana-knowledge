@@ -17,11 +17,13 @@ class GraphStore(Protocol):
     def retract_edge(self, edge: Edge, at) -> None: ...
     def edges(self, subject: str | None = None, relation: str | None = None,
               include_retracted: bool = False) -> list[Edge]: ...
+    def clear(self) -> None: ...
 
 
 class VectorStore(Protocol):
     def upsert(self, key: str, vector: np.ndarray, payload: dict) -> None: ...
     def search(self, vector: np.ndarray, k: int = 10) -> list[tuple[str, float, dict]]: ...
+    def clear(self) -> None: ...
 
 
 class InMemoryGraphStore:
@@ -50,6 +52,10 @@ class InMemoryGraphStore:
                 and (relation is None or e.relation == relation)
                 and (include_retracted or e.current)]
 
+    def clear(self) -> None:
+        self._entities.clear()
+        self._edges.clear()
+
 
 class InMemoryVectorStore:
     def __init__(self) -> None:
@@ -65,6 +71,9 @@ class InMemoryVectorStore:
             self._keys.append(key)
             self._vectors.append(vector)
             self._payloads.append(payload)
+
+    def clear(self) -> None:
+        self._keys, self._vectors, self._payloads = [], [], []
 
     def search(self, vector: np.ndarray, k: int = 10) -> list[tuple[str, float, dict]]:
         if not self._keys:

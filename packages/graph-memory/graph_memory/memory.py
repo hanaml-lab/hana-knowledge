@@ -21,7 +21,12 @@ def _date(value: str | date | None) -> date:
 
 
 class Memory:
-    """``Memory()`` keeps everything in process. Pass ``neo4j=`` and ``qdrant=`` URLs to persist."""
+    """``Memory()`` keeps everything in process. Pass ``neo4j=`` and ``qdrant=`` URLs to persist.
+
+    Every turn passed to ``add`` is kept as an episode, and the graph, the entity vectors and the
+    communities are derived from the episodes. ``delete`` removes an episode and rebuilds what was derived
+    from it; ``epoch`` counts deletions, and a ``Recall`` carries the epoch it was built in.
+    """
 
     def __init__(
         self,
@@ -55,9 +60,16 @@ class Memory:
         self.recall_tokens = recall_tokens
         self._communities: list[comm.Community] = []
         self._stale = False
+        self._episodes: list[tuple[str, str, date]] = []  # (user, text, when), in the order they arrived
+        self.epoch = 0
+        self._communities_epoch = 0
 
     def add(self, user: str, text: str, at: str | date | None = None) -> list[Edge]:
         when = _date(at)
+        self._episodes.append((user, text, when))
+        return self._derive(user, text, when)
+
+    def _derive(self, user: str, text: str, when: date) -> list[Edge]:
         if self.graph.entity(user) is None:
             self.graph.upsert_entity(Entity(user, user, "person"))
         changed: list[Edge] = []
@@ -69,17 +81,44 @@ class Memory:
                 self.refresh_communities(when)
         return changed
 
+    def delete(self, user: str, text: str, at: str | date | None = None) -> int:
+        """Delete the episodes with this text (on day ``at``, if given) and rebuild everything derived from
+        them by replaying the remaining episodes in order. Returns how many episodes were deleted.
+
+        Raises RuntimeError when the store holds facts from episodes this Memory has not seen (a store
+        opened from another process), since those could not be rebuilt.
+        """
+        day = _date(at) if at is not None else None
+        doomed = [ep for ep in self._episodes if ep[0] == user and ep[1] == text and day in (None, ep[2])]
+        if not doomed:
+            return 0
+        known = {ep[1] for ep in self._episodes}
+        foreign = {e.source for e in self.graph.edges(include_retracted=True)} - known
+        if foreign:
+            raise RuntimeError(f"cannot rebuild: the store holds facts from {len(foreign)} unseen episodes")
+        self._episodes = [ep for ep in self._episodes if ep not in doomed]
+        self.graph.clear()
+        self.vectors.clear()
+        for episode in self._episodes:
+            self._derive(*episode)
+        self.epoch += 1
+        self._stale = True
+        return len(doomed)
+
     def refresh_communities(self, at: str | date | None = None) -> None:
         self._communities = comm.detect(self.graph, _date(at))
+        self._communities_epoch = self.epoch
         self._stale = False
 
     def recall(self, user: str, query: str, at: str | date | None = None) -> Recall:
         now = _date(at)
-        if self._stale and self.community_refresh == "on_change":
-            self.refresh_communities(now)
+        if (self._stale and self.community_refresh == "on_change") or self._communities_epoch != self.epoch:
+            self.refresh_communities(now)  # communities built before a deletion are never served after it
         names = {e.id: e.name for e in self.graph.entities()}
         mine = [c for c in self._communities if user in c.members]
-        return pack(self.graph.edges(subject=user), mine, query, now, names, self.recall_tokens)
+        recalled = pack(self.graph.edges(subject=user), mine, query, now, names, self.recall_tokens)
+        recalled.epoch = self.epoch
+        return recalled
 
     def export_notes(self, user: str | None = None) -> str:
         names = {e.id: e.name for e in self.graph.entities()}

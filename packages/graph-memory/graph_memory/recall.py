@@ -24,6 +24,7 @@ class Recall:
     edges: list[Edge]
     communities: list[Community]
     context: str
+    epoch: int = 0  # Memory.epoch when this was built; a deletion since makes it stale
 
 
 def as_of(query: str, now: date) -> date:

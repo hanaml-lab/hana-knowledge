@@ -57,6 +57,9 @@ class Neo4jStore:
             **edge.__dict__,
         )
 
+    def clear(self) -> None:
+        self._run("MATCH (e:Entity) DETACH DELETE e")
+
     def retract_edge(self, edge: Edge, at: date) -> None:
         self._run("MATCH ()-[f:FACT {id: $id}]->() SET f.retracted_at = $at", id=edge.id, at=at)
 
