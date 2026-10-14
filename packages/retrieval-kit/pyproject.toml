@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "retrieval-kit"
-version = "0.6.2"
+version = "0.7.0"
 description = "Hybrid BM25 and dense retrieval with cross-encoder reranking, and answers that cite a passage for every claim or abstain."
 readme = "README.md"
 license = "Apache-2.0"

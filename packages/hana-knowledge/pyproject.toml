@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hana-knowledge"
-version = "0.5.0"
+version = "0.6.0"
 description = "Grounded answers over documents: retrieval, temporal memory and citation checks in one pipeline."
 license = "Apache-2.0"
 authors = [{ name = "hanaML", email = "hello@hanaml.com" }]

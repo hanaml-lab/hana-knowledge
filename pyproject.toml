@@ -2,7 +2,7 @@
 # shared tool settings and the uv workspace that installs them together.
 [project]
 name = "hana-knowledge-workspace"
-version = "0.5.0"
+version = "0.6.0"
 requires-python = ">=3.10"
 dependencies = ["hana-knowledge", "retrieval-kit", "graph-memory", "cite-check"]
 

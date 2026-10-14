@@ -5,4 +5,4 @@ from graph_memory.model import Edge, Entity
 from graph_memory.recall import Recall
 
 __all__ = ["Edge", "Entity", "Memory", "Recall"]
-__version__ = "0.4.1"
+__version__ = "0.5.0"
