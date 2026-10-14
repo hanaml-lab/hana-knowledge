@@ -8,7 +8,7 @@
   "exports": "./src/index.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hanaml-lab/graph-memory.git",
+    "url": "https://github.com/hanaml-lab/hana-knowledge.git",
     "directory": "packages/notes-reader"
   },
   "engines": {

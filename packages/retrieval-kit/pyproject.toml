@@ -21,7 +21,7 @@ pdf = ["docling>=2.0"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.urls]
-Repository = "https://github.com/hanaml-lab/retrieval-kit"
+Repository = "https://github.com/hanaml-lab/hana-knowledge/tree/main/packages/retrieval-kit"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/retrieval_kit"]

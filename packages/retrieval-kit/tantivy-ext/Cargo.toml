@@ -4,7 +4,7 @@ version = "0.6.2"
 edition = "2021"
 license = "Apache-2.0"
 description = "BM25 index over Tantivy for retrieval-kit"
-repository = "https://github.com/hanaml-lab/retrieval-kit"
+repository = "https://github.com/hanaml-lab/hana-knowledge"
 
 [lib]
 name = "retrieval_kit_tantivy"

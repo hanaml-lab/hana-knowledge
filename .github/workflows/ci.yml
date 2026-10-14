@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   python:
     runs-on: ubuntu-latest
@@ -16,10 +23,10 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: uv sync
-      - run: uv run ruff check .
+      - run: uv sync --locked
+      - run: make lint
       - run: make test-python
-      - run: uv run python examples/end_to_end.py
+      - run: make example
 
   rust:
     runs-on: ubuntu-latest
@@ -28,6 +35,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - run: cargo clippy --manifest-path packages/retrieval-kit/tantivy-ext/Cargo.toml --features python -- -D warnings
       - run: make test-rust
 

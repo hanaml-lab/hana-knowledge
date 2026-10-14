@@ -23,7 +23,7 @@ all = ["graph-memory[neo4j,qdrant,embed,leiden]"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.urls]
-Repository = "https://github.com/hanaml-lab/graph-memory"
+Repository = "https://github.com/hanaml-lab/hana-knowledge/tree/main/packages/graph-memory"
 
 [tool.hatch.build.targets.wheel]
 packages = ["graph_memory"]
