@@ -61,7 +61,7 @@ def line(edge: Edge, names: dict[str, str]) -> str:
 
 
 def pack(edges: list[Edge], communities: list[Community], query: str, now: date,
-         names: dict[str, str], budget: int = 4096) -> Recall:
+         names: dict[str, str], budget: int = 4096, raw: list[str] | tuple[str, ...] = ()) -> Recall:
     when = as_of(query, now)
     valid = [e for e in edges if e.current and e.valid_at(when)]
     valid.sort(key=lambda e: (-relevance(e, query, names), e.relation))
@@ -76,6 +76,8 @@ def pack(edges: list[Edge], communities: list[Community], query: str, now: date,
         sections = block + sections if BROAD.search(query) else sections + block
     if history:
         sections += ["Earlier or later facts:"] + [line(e, names) for e in history]
+    if raw:  # turns kept as text by budgeted consolidation: nothing is lost before it is scheduled
+        sections += ["Not yet consolidated:"] + list(raw)
 
     out, used = [], 0
     for s in sections:

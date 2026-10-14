@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import math
+import re
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
 
 from graph_memory import communities as comm
 from graph_memory import notes
+from graph_memory.consolidate import Plan, Unit, plan
 from graph_memory.embed import BgeM3Embedder, CharNgramEmbedder, Embedder
 from graph_memory.extract import Extractor, LLMExtractor, PatternExtractor
 from graph_memory.model import Edge, Entity
-from graph_memory.recall import Recall, pack
-from graph_memory.resolve import Resolver
+from graph_memory.recall import RELATION_WORDS, Recall, pack
+from graph_memory.resolve import FUNCTIONAL, Resolver
 from graph_memory.store import GraphStore, InMemoryGraphStore, InMemoryVectorStore, VectorStore
 
 
@@ -18,6 +23,26 @@ def _date(value: str | date | None) -> date:
     if value is None:
         return date.today()
     return value if isinstance(value, date) else date.fromisoformat(value)
+
+
+@dataclass
+class Episode:
+    user: str
+    text: str
+    when: date
+    state: str = "graph"  # graph (consolidated), raw (kept, indexed as text) or cold (forgotten from recall)
+
+
+_PLANS = re.compile(r"\b(will|plan|plans|prefer|always|never|every|remind|allergic|birthday|going to)\b",
+                    re.IGNORECASE)
+
+
+def prior_access(text: str, age: int, mentions: int) -> float:
+    """A hand-set prior for the chance a turn is read again: turns that mention known entities or state a plan
+    or a preference are read more, and every turn less as it ages. Replace it with a fitted hazard model
+    (``consolidate.p_within`` over its per-step hazards) once you log which turns recall uses."""
+    z = -1.0 + 1.2 * min(mentions, 2) + 1.0 * bool(_PLANS.search(text)) - 0.05 * age
+    return 1.0 / (1.0 + math.exp(-z))
 
 
 class Memory:
@@ -39,6 +64,10 @@ class Memory:
         recall_tokens: int = 4096,
         graph: GraphStore | None = None,
         vectors: VectorStore | None = None,
+        consolidation: str = "eager",
+        budget: float = 0.4,
+        access: Callable[[str, str, int], float] | None = None,
+        conflict: Callable[[str, str], float] | None = None,
     ):
         if graph is None and neo4j:
             from graph_memory.store.neo4j import Neo4jStore
@@ -60,14 +89,54 @@ class Memory:
         self.recall_tokens = recall_tokens
         self._communities: list[comm.Community] = []
         self._stale = False
-        self._episodes: list[tuple[str, str, date]] = []  # (user, text, when), in the order they arrived
+        self._episodes: list[Episode] = []  # every turn, in the order it arrived
         self.epoch = 0
         self._communities_epoch = 0
+        if consolidation not in {"eager", "budgeted"}:
+            raise ValueError("consolidation is eager or budgeted")
+        self.consolidation, self.budget = consolidation, budget
+        self.access, self.conflict = access, conflict
 
     def add(self, user: str, text: str, at: str | date | None = None) -> list[Edge]:
+        """Remember a turn. Eager memory writes it to the graph now; budgeted memory keeps it as raw text,
+        still recalled, until ``consolidate`` decides whether it earns a graph write."""
         when = _date(at)
-        self._episodes.append((user, text, when))
+        if self.consolidation == "budgeted":
+            self._episodes.append(Episode(user, text, when, "raw"))
+            return []
+        self._episodes.append(Episode(user, text, when))
         return self._derive(user, text, when)
+
+    def consolidate(self, at: str | date | None = None) -> Plan:
+        """One budgeted cycle over the raw turns (TIDE): graph-write those that earn it within
+        ``budget`` times the cost of writing them all, keep the rest as raw text, and drop old turns nobody
+        is likely to read from recall (they stay in the episode log)."""
+        now = _date(at)
+        raw = [ep for ep in self._episodes if ep.state == "raw"]
+        ids = {id(ep): ep.text if [e.text for e in raw].count(ep.text) == 1 else f"{ep.text} #{i}"
+               for i, ep in enumerate(raw)}
+        result = plan([self._unit(ep, ids[id(ep)], now) for ep in raw], self.budget, upgrades=("graph",))
+        for ep in raw:
+            action = result.actions[ids[id(ep)]]
+            if action == "graph":
+                ep.state = "graph"
+                self._derive(ep.user, ep.text, ep.when)
+            elif action == "forget":
+                ep.state = "cold"
+        return result
+
+    def _unit(self, ep: Episode, uid: str, now: date) -> Unit:
+        age = max((now - ep.when).days, 0)
+        lowered = ep.text.lower()
+        mentions = sum(1 for e in self.graph.entities() if e.id != ep.user and e.name.lower() in lowered)
+        p = self.access(ep.user, ep.text, age) if self.access else prior_access(ep.text, age, mentions)
+        if self.conflict:
+            chi = self.conflict(ep.user, ep.text)
+        else:  # a turn that speaks to a one-valued relation the user already has may supersede it
+            words = set(re.findall(r"[a-z]+", lowered))
+            held = {e.relation for e in self.graph.edges(subject=ep.user) if e.valid_to is None} & FUNCTIONAL
+            chi = 1.0 if any(words & RELATION_WORDS.get(r, set()) for r in held) else 0.0
+        return Unit(uid, int(len(ep.text.split()) * 1.3) + 1, p, mentions, chi, age)
 
     def _derive(self, user: str, text: str, when: date) -> list[Edge]:
         if self.graph.entity(user) is None:
@@ -89,18 +158,19 @@ class Memory:
         opened from another process), since those could not be rebuilt.
         """
         day = _date(at) if at is not None else None
-        doomed = [ep for ep in self._episodes if ep[0] == user and ep[1] == text and day in (None, ep[2])]
+        doomed = [ep for ep in self._episodes if ep.user == user and ep.text == text and day in (None, ep.when)]
         if not doomed:
             return 0
-        known = {ep[1] for ep in self._episodes}
+        known = {ep.text for ep in self._episodes}
         foreign = {e.source for e in self.graph.edges(include_retracted=True)} - known
         if foreign:
             raise RuntimeError(f"cannot rebuild: the store holds facts from {len(foreign)} unseen episodes")
-        self._episodes = [ep for ep in self._episodes if ep not in doomed]
+        self._episodes = [ep for ep in self._episodes if all(ep is not d for d in doomed)]
         self.graph.clear()
         self.vectors.clear()
-        for episode in self._episodes:
-            self._derive(*episode)
+        for ep in self._episodes:
+            if ep.state == "graph":
+                self._derive(ep.user, ep.text, ep.when)
         self.epoch += 1
         self._stale = True
         return len(doomed)
@@ -116,7 +186,10 @@ class Memory:
             self.refresh_communities(now)  # communities built before a deletion are never served after it
         names = {e.id: e.name for e in self.graph.entities()}
         mine = [c for c in self._communities if user in c.members]
-        recalled = pack(self.graph.edges(subject=user), mine, query, now, names, self.recall_tokens)
+        words = set(re.findall(r"[a-z]+", query.lower()))
+        raw = [f"- {ep.text} (said {ep.when.isoformat()})" for ep in self._episodes
+               if ep.user == user and ep.state == "raw" and words & set(re.findall(r"[a-z]+", ep.text.lower()))]
+        recalled = pack(self.graph.edges(subject=user), mine, query, now, names, self.recall_tokens, raw)
         recalled.epoch = self.epoch
         return recalled
 

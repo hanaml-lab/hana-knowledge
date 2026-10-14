@@ -58,6 +58,20 @@ summaries over them. `memory.epoch` counts deletions and every `Recall` carries 
 summary built before a deletion is never served after it. A store that holds facts from turns this `Memory`
 never saw (opened from another process) is not rebuilt; `delete` raises instead.
 
+### Budgeted consolidation
+
+Writing a turn into the graph costs an extraction call. `Memory(consolidation="budgeted", budget=0.4)` keeps
+new turns as raw text (still recalled, under "Not yet consolidated") and `memory.consolidate()` runs one cycle
+of the scheduler from [TIDE](https://hanaml.com/research/papers/agent-memory-consolidation): each raw turn is
+scored by its chance of being read again, the known entities it mentions and whether it speaks to a one-valued
+relation the user already has (a move, a new job), and a greedy knapsack spends at most `budget` times the cost
+of writing every turn. A turn that supersedes a belief is written first even if it is rarely read, because the
+stale edge would otherwise keep misleading recall; old turns nobody is likely to read leave recall but stay in
+the episode log. `graph_memory.consolidate.plan` is the planner on its own; the hazard model that predicts
+access, the summary and LoRA tiers and the paper's experiments are in
+[agent-memory-consolidation](https://github.com/hanaml-lab/agent-memory-consolidation). Without a fitted hazard
+model, `prior_access` is a hand-set prior; pass `access=` and `conflict=` (an NLI model, say) to replace it.
+
 ## How it works
 
 - **Extract.** A small model turns each turn into entities and dated relations, constrained to a JSON schema.
@@ -77,6 +91,8 @@ The `packages/notes-reader` package (at the monorepo root) reads the plain dated
 | `resolve_threshold` | 0.82 | Similarity above which two entities are merged |
 | `community_refresh` | `on_change` | Or `nightly`, to batch summary updates |
 | `recall_tokens` | 4096 | Budget for the packed context |
+| `consolidation` | `eager` | Or `budgeted`: turns wait as raw text until `consolidate()` |
+| `budget` | 0.4 | Share of the cost of writing every turn to the graph that one cycle may spend |
 
 ## Benchmarks
 
