@@ -9,8 +9,8 @@ passage supports an answer, the system abstains. Memory for each user is a bitem
 held, and when the system learned it), so a question is resolved against the facts valid at the time it asks
 about; a budgeted scheduler decides which turns earn a graph write, and deleting a turn rebuilds everything derived
 from it. It is the system of the research project
-[Grounded answers over documents](https://hanaml.com/research/grounded-knowledge) and carries the methods of that
-project's three Papers.
+[Grounded answers over documents](https://hanaml.com/research/grounded-knowledge) and carries parts of the methods of
+that project's three Papers.
 
 | Component | Language | What it does |
 | --- | --- | --- |
@@ -124,26 +124,42 @@ Offline, with the stand-ins above, so these check the mechanics, not model quali
   `packages/cite-check/data/injected-errors.jsonl` (3 unit, 2 numeric, 1 unsupported, 1 contradicted) and raises
   nothing on the 3 clean reports.
 
-### Reported for the project
+### Reported in the papers
 
-From the research project [Grounded answers over documents](https://hanaml.com/research/grounded-knowledge), with
-the models named in each note:
+The project's three Papers report these numbers, with the models named in each setting; each row quotes its paper.
+LEDGER and InForce are seeded simulation studies calibrated to published baselines, as their limitations sections
+say. LEDGER's reconciliation, InForce's in-force closure and defeater search, and TIDE's hazard model are in the paper
+repos.
 
-| Metric | Baseline | Ours | Note |
+| Metric | Baseline | Result | Setting | Paper |
+| --- | --- | --- | --- | --- |
+| BiTempQA accuracy, in-order ingest | 60.2% | 77.2% | 2,400 bitemporal questions, GPT-4o-mini reader, 5 seeds; Graphiti re-run vs. LEDGER | [LEDGER](https://hanaml.com/research/papers/temporal-graphrag-memory) |
+| As-of questions, BiTempQA | 46.5% | 76.9% | What the store believed at a past transaction time; Graphiti re-run vs. LEDGER | LEDGER |
+| Accuracy change under shuffled ingest | −11.1 pts | −0.4 pts | BiTempQA, sessions imported out of order; Graphiti re-run vs. LEDGER (write-time invalidation on LEDGER's extraction: −12.3) | LEDGER |
+| LongMemEval-S accuracy | 58.2% | 69.4% | Qwen3-14B reader; the full history in a 128k context vs. LEDGER (Graphiti re-run 65.0%) | LEDGER |
+| Temporal-reasoning and knowledge-update questions, LongMemEval-S | 41.4% and 52.6% | 63.2% and 74.4% | The same Qwen3-14B runs | LEDGER |
+| Median context tokens per question | 113k | 4.1k | LongMemEval-S, Qwen3-14B reader; the full history vs. LEDGER | LEDGER |
+| Stale fact returned after a correction | 23.1% | 3.0% | 400 scripted correction histories; a turn-level vector store vs. LEDGER | LEDGER |
+| In-force citation precision | 0.735 | 0.939 | AmendCite test, 800 questions, Qwen3-32B generator; local NLI + numeric verifier vs. InForce | [InForce](https://hanaml.com/research/papers/agentic-rag-citation-verification) |
+| Defeated citations accepted | 84% | 10% | DefeatProbe, 1,200 defeated citations; the local NLI verifier (MiniCheck-7B: 86%) vs. InForce | InForce |
+| Answer accuracy, AmendCite | 61.0% | 73.3% | Same generator, controller and repair loop; verification against the cited spans vs. the in-force closure | InForce |
+| FinanceBench accuracy | 66.3% | 72.5% | 150-question open-source sample; local verification (dense RAG: 53.9%) vs. InForce; the 95% intervals overlap | InForce |
+| Answers with an in-force defect at α = 0.10 | 38.6% | 10.0% | Conformal risk control, 75.6% of claims shipped; a local verifier calibrated on local labels vs. InForce on in-force labels | InForce |
+| Questions answered confidently with the evidence removed | 15.2% | 2.8% | Dense RAG vs. InForce | InForce |
+| p50 latency per question | 3.1 s | 8.3 s | AmendCite; one-pass dense RAG vs. InForce | InForce |
+| LoCoMo J and LongMemEval-S at 40% of eager compute | 68.6 and 62.4% | 69.7 and 65.1% | GPT-4o-mini reader, budget B = 0.40; eager graph consolidation of the LEDGER store vs. TIDE | [TIDE](https://hanaml.com/research/papers/agent-memory-consolidation) |
+| LoCoMo J and LongMemEval-S at equal compute | 68.6 and 62.4% | 71.4 and 66.2% | GPT-4o-mini reader, B = 1.00; eager graph consolidation vs. TIDE | TIDE |
+| Accuracy lost from 10 to 320 sessions | 11.6 pts | 6.7 pts | Horizon streams built from LongMemEval haystacks; eager graph consolidation vs. TIDE | TIDE |
+
+### Reported by the components
+
+`cite-check` reports these in its README; no paper covers them.
+
+| Metric | Baseline | Result | Note |
 | --- | --- | --- | --- |
-| Recall@10, FinanceBench evidence pages | 0.61 | 0.79 | Dense-only bge-m3 baseline; ours is hybrid + rerank |
-| LongMemEval-S accuracy | 58.2% | 69.4% | Baseline is full-history in a 128k context, same reader model |
-| Numeric-error detection | 49% | 92% | Unit swaps, wrong periods, arithmetic; typed checks in code |
-| Answer accuracy, FinanceBench open-book | 54% | 71% | Same Qwen3-32B generator; 150-question public sample |
-| Citation precision (claim-level, human-graded) | 0.68 | 0.88 | Two annotators, Cohen's kappa 0.74 |
-| Unsupported answers given instead of abstaining | 17% | 6% | Questions whose evidence was removed from the corpus |
-| p50 latency per question | 3.1 s | 6.8 s | Cost of the extra retrieval rounds; single H100 |
-| Temporal-reasoning subset | 41% | 63% | Questions about the order and validity of facts |
-| Knowledge-update subset | 52% | 74% | The later fact must win over the earlier one |
-| Stale facts returned after a correction | 23% | 3% | Vector-store memory vs. graph with invalidation; synthetic edits |
-| Context tokens per answer | 96k | 4.1k | Median, LongMemEval-S |
 | Unsupported-claim recall, injected errors | 0.58 | 0.83 | Whole-answer LLM review vs. claim-level verifier |
 | False alarms per 100 claims | 6.1 | 4.4 | Same reports, same reviewer model |
+| Numeric-error detection | 49% | 92% | Unit swaps, wrong periods, arithmetic; typed checks in code |
 | FActScore-style precision, generated reports | 0.71 | 0.84 | After one verify-and-revise pass |
 
 ## Papers
@@ -153,8 +169,8 @@ read it, then a scheduler that decides which turns are worth writing into that g
 
 | Date | Paper | What this repo implements | PDF | Paper repo |
 | --- | --- | --- | --- | --- |
-| 2026-04-08 | [LEDGER: Order-Invariant Bitemporal Reconciliation for Knowledge-Graph Memory in Long-Horizon LLM Agents](https://hanaml.com/research/papers/temporal-graphrag-memory) | `graph-memory`: valid and recorded time on every edge, corrections that retract instead of delete, valid-time recall, communities | [PDF](https://hanaml.com/papers/temporal-graphrag-memory.pdf) | [temporal-graphrag-memory](https://github.com/hanaml-lab/temporal-graphrag-memory) |
-| 2026-07-08 | [InForce: Defeater-Aware Claim Verification for Agentic Retrieval over Amended Financial and Legal Filings](https://hanaml.com/research/papers/agentic-rag-citation-verification) | `retrieval-kit`'s answer loop and `cite-check`: atomic claims, the NLI and verifier cascade, figures recomputed in code, revision | [PDF](https://hanaml.com/papers/agentic-rag-citation-verification.pdf) | [agentic-rag-citation-verification](https://github.com/hanaml-lab/agentic-rag-citation-verification) |
+| 2026-04-08 | [LEDGER: Order-Invariant Bitemporal Reconciliation for Knowledge-Graph Memory in Long-Horizon LLM Agents](https://hanaml.com/research/papers/temporal-graphrag-memory) | `graph-memory`: valid and recorded time on every edge, corrections that retract instead of delete, valid-time recall, communities; the reconciliation and BiTempQA are in the paper repo | [PDF](https://hanaml.com/papers/temporal-graphrag-memory.pdf) | [temporal-graphrag-memory](https://github.com/hanaml-lab/temporal-graphrag-memory) |
+| 2026-07-08 | [InForce: Defeater-Aware Claim Verification for Agentic Retrieval over Amended Financial and Legal Filings](https://hanaml.com/research/papers/agentic-rag-citation-verification) | `retrieval-kit`'s answer loop and `cite-check`: atomic claims, the NLI and verifier cascade, figures recomputed in code, revision; the provision graph, the in-force closure, the defeater search and the conformal threshold are in the paper repo | [PDF](https://hanaml.com/papers/agentic-rag-citation-verification.pdf) | [agentic-rag-citation-verification](https://github.com/hanaml-lab/agentic-rag-citation-verification) |
 | 2026-08-19 | [TIDE: Hazard-Scheduled, Budget-Constrained Memory Consolidation for Long-Horizon LLM Agents](https://hanaml.com/research/papers/agent-memory-consolidation) | `graph_memory.consolidate`: the value of consolidation and the greedy multiple-choice knapsack with the best-single-upgrade check, wired into `Memory`; the hazard model, the LoRA tier and the experiments are in the paper repo | [PDF](https://hanaml.com/papers/agent-memory-consolidation.pdf) | [agent-memory-consolidation](https://github.com/hanaml-lab/agent-memory-consolidation) |
 
 ## Models

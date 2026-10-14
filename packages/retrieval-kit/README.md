@@ -71,19 +71,25 @@ model: Qwen/Qwen3-32B
 
 ## Benchmarks
 
-FinanceBench, 150-question public sample, Qwen3-32B as the generator in both columns. Run from
-`packages/retrieval-kit` with `python eval/run_financebench.py --config configs/financebench.yaml --pdfs pdfs/`, where `pdfs/` holds the filings
+Run FinanceBench's 150-question public sample from `packages/retrieval-kit` with
+`python eval/run_financebench.py --config configs/financebench.yaml --pdfs pdfs/`, where `pdfs/` holds the filings
 from the FinanceBench repository; the question file is downloaded on first run.
 
-| Metric | Dense only (bge-m3) | retrieval-kit |
-| --- | --- | --- |
-| Recall@10, evidence pages | 0.61 | 0.79 |
-| Answer accuracy, open-book | 54% | 71% |
-| Citation precision (claim-level, human-graded) | 0.68 | 0.88 |
-| Unsupported answers instead of abstaining | 17% | 6% |
-| p50 latency per question, one H100 | 3.1 s | 6.8 s |
+The numbers below are the [InForce paper](https://hanaml.com/research/papers/agentic-rag-citation-verification)'s,
+with Qwen3-32B as the generator in every column. InForce's controller searches with BM25 and bge-m3 and follows
+cross-references, as this answer loop does; its provision graph, in-force closure and defeater search are in the
+[paper repo](https://github.com/hanaml-lab/agentic-rag-citation-verification), so a run of this package alone will
+not reproduce these numbers.
 
-The extra retrieval rounds roughly double latency. Set `max_rounds: 1` if that matters more than recall.
+| Metric | Dense RAG, one pass | Local verification | InForce |
+| --- | --- | --- | --- |
+| FinanceBench accuracy (95% intervals overlap) | 53.9% | 66.3% | 72.5% |
+| AmendCite accuracy, 800 questions | 47.9% | 61.0% | 73.3% |
+| AmendCite in-force citation precision | 0.525 | 0.735 | 0.939 |
+| Questions answered confidently with the evidence removed | 15.2% | n/a | 2.8% |
+| p50 latency per question, AmendCite | 3.1 s | 6.5 s | 8.3 s |
+
+Verification and repair rounds cost latency. Set `max_rounds: 1` if that matters more than recall.
 
 ## Development
 

@@ -96,18 +96,24 @@ The `packages/notes-reader` package (at the monorepo root) reads the plain dated
 
 ## Benchmarks
 
-LongMemEval-S, with the same reader model in both columns. `python packages/graph-memory/bench/longmemeval.py --split s` (reader and
+`python packages/graph-memory/bench/longmemeval.py --split s` runs LongMemEval-S against this package (reader and
 judge through `OPENAI_BASE_URL`; the dataset is downloaded on first run).
 
-| Metric | Full history in 128k context | graph-memory |
+The numbers below are the [LEDGER paper](https://hanaml.com/research/papers/temporal-graphrag-memory)'s, with
+Qwen3-14B as the reader in both columns. graph-memory closes an edge when a later fact arrives; LEDGER instead
+re-solves each slot's timeline from all its evidence, and that reconciliation is in the
+[paper repo](https://github.com/hanaml-lab/temporal-graphrag-memory), so a run of this package alone will not
+reproduce them.
+
+| Metric | Full history in 128k context | LEDGER |
 | --- | --- | --- |
 | Accuracy | 58.2% | 69.4% |
-| Temporal-reasoning subset | 41% | 63% |
-| Knowledge-update subset | 52% | 74% |
-| Median context tokens per answer | 96k | 4.1k |
+| Temporal-reasoning subset | 41.4% | 63.2% |
+| Knowledge-update subset | 52.6% | 74.4% |
+| Median context tokens per question | 113k | 4.1k |
 
-On a synthetic set of edits, a vector-store memory returned the stale fact after a correction 23% of the time;
-graph-memory did 3% of the time.
+Over 400 scripted correction histories, a turn-level vector store returned the superseded fact in 23.1% of probes
+and LEDGER in 3.0%.
 
 ## Development
 

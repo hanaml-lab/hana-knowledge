@@ -4,7 +4,8 @@
 
 The question file is downloaded from the FinanceBench repository on first use. The filings
 themselves (``--pdfs``) come from the same repository's ``pdfs/`` folder. Answers are graded by
-normalised numeric or string match; the README's accuracy figures were human-checked.
+normalised numeric or string match. The FinanceBench figures in the README are the InForce paper's, not this
+script's output.
 """
 
 from __future__ import annotations
