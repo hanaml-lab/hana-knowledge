@@ -18,7 +18,7 @@ keywords:
   - memory consolidation
 references:
   - type: report
-    title: "Bitemporal knowledge graphs as long-term memory for assistants"
+    title: "LEDGER: Order-Invariant Bitemporal Reconciliation for Knowledge-Graph Memory in Long-Horizon LLM Agents"
     authors:
       - family-names: Agarwal
         given-names: Manav
@@ -27,7 +27,7 @@ references:
     year: 2026
     url: "https://hanaml.com/research/papers/temporal-graphrag-memory"
   - type: report
-    title: "Claim-level citation verification for agentic retrieval over financial filings"
+    title: "InForce: Defeater-Aware Claim Verification for Agentic Retrieval over Amended Financial and Legal Filings"
     authors:
       - family-names: Agarwal
         given-names: Manav
