@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, and cite the paper whose method you use."
+type: software
+title: "hana-knowledge: grounded answers over documents with bitemporal memory and claim-level verification"
+version: 0.6.0
+date-released: 2026-10-14
+license: Apache-2.0
+repository-code: "https://github.com/hanaml-lab/hana-knowledge"
+url: "https://hanaml.com/research/grounded-knowledge"
+authors:
+  - name: "hanaML"
+keywords:
+  - retrieval-augmented generation
+  - citations
+  - claim verification
+  - knowledge graph
+  - bitemporal memory
+  - memory consolidation
+references:
+  - type: report
+    title: "Bitemporal knowledge graphs as long-term memory for assistants"
+    authors:
+      - family-names: Agarwal
+        given-names: Manav
+    institution:
+      name: hanaML
+    year: 2026
+    url: "https://hanaml.com/research/papers/temporal-graphrag-memory"
+  - type: report
+    title: "Claim-level citation verification for agentic retrieval over financial filings"
+    authors:
+      - family-names: Agarwal
+        given-names: Manav
+    institution:
+      name: hanaML
+    year: 2026
+    url: "https://hanaml.com/research/papers/agentic-rag-citation-verification"
+  - type: report
+    title: "TIDE: Hazard-Scheduled, Budget-Constrained Memory Consolidation for Long-Horizon LLM Agents"
+    authors:
+      - family-names: Agarwal
+        given-names: Manav
+    institution:
+      name: hanaML
+    year: 2026
+    url: "https://hanaml.com/research/papers/agent-memory-consolidation"
