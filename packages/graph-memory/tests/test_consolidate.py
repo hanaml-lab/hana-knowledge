@@ -80,3 +80,21 @@ def test_eager_memory_has_nothing_to_consolidate():
     m = Memory()
     m.add(user="u42", text="I live in Manchester.", at="2026-01-03")
     assert m.consolidate(at="2026-01-04").actions == {}
+
+
+def test_a_turn_about_the_weather_at_the_office_does_not_contest_where_the_user_works():
+    m = Memory(consolidation="budgeted", budget=1.0)
+    m.add(user="u42", text="I work at Northwind Traders.", at="2026-01-03")
+    m.consolidate(at="2026-01-03")
+    m.add(user="u42", text="The office was cold.", at="2026-04-01")
+    m.add(user="u42", text="I joined Harbour Logistics in March.", at="2026-04-02")
+    m.budget = 0.7  # room for one of the two graph writes
+    actions = m.consolidate(at="2026-04-03").actions
+    assert actions == {"The office was cold.": "keep", "I joined Harbour Logistics in March.": "graph"}
+
+
+def test_raw_turns_are_recalled_by_content_words_only():
+    m = Memory(consolidation="budgeted")
+    m.add(user="u42", text="It rained all afternoon and the office was cold.", at="2026-01-05")
+    assert "rained" not in m.recall(user="u42", query="Where do I live and where do I work?").context
+    assert "rained" in m.recall(user="u42", query="Did it rain this afternoon?").context

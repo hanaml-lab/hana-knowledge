@@ -14,7 +14,7 @@ from graph_memory.consolidate import Plan, Unit, plan
 from graph_memory.embed import BgeM3Embedder, CharNgramEmbedder, Embedder
 from graph_memory.extract import Extractor, LLMExtractor, PatternExtractor
 from graph_memory.model import Edge, Entity
-from graph_memory.recall import RELATION_WORDS, Recall, pack
+from graph_memory.recall import Recall, pack
 from graph_memory.resolve import FUNCTIONAL, Resolver
 from graph_memory.store import GraphStore, InMemoryGraphStore, InMemoryVectorStore, VectorStore
 
@@ -35,13 +35,33 @@ class Episode:
 
 _PLANS = re.compile(r"\b(will|plan|plans|prefer|always|never|every|remind|allergic|birthday|going to)\b",
                     re.IGNORECASE)
+_FIRST_PERSON = re.compile(r"\b(I|my|me)\b")
+# Words with which a user states a one-valued relation about themselves ("I moved to", "I joined").
+_RELATION_CUES = {
+    "lives_in": {"live", "lives", "living", "lived", "move", "moved", "relocated", "address", "home"},
+    "works_at": {"work", "works", "working", "job", "joined", "started", "employer", "company", "firm"},
+    "partner": {"partner", "wife", "husband", "married"},
+}
+_CUES = set().union(*_RELATION_CUES.values())
+
+
+_STOP = set("the and was were for with you your what where when who how did does have has had this that from "
+             "are not but can all any its our out".split())
+
+
+def _content(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z]+", text.lower()) if len(w) > 2 and w not in _STOP}
 
 
 def prior_access(text: str, age: int, mentions: int) -> float:
-    """A hand-set prior for the chance a turn is read again: turns that mention known entities or state a plan
-    or a preference are read more, and every turn less as it ages. Replace it with a fitted hazard model
-    (``consolidate.p_within`` over its per-step hazards) once you log which turns recall uses."""
-    z = -1.0 + 1.2 * min(mentions, 2) + 1.0 * bool(_PLANS.search(text)) - 0.05 * age
+    """A hand-set prior for the chance a turn is read again: a first-person statement about where the user
+    lives, works or who they are with, a plan or a preference, and mentions of known entities raise it; age
+    lowers it. Replace it with a fitted hazard model (``consolidate.p_within`` over its per-step hazards) once
+    you log which turns recall uses."""
+    words = set(re.findall(r"[a-z]+", text.lower()))
+    personal = bool(_FIRST_PERSON.search(text))
+    z = (-3.0 + 2.5 * (personal and bool(words & _CUES)) + 1.5 * (personal and bool(_PLANS.search(text)))
+         + 1.0 * min(mentions, 2) - 0.05 * age)
     return 1.0 / (1.0 + math.exp(-z))
 
 
@@ -132,10 +152,11 @@ class Memory:
         p = self.access(ep.user, ep.text, age) if self.access else prior_access(ep.text, age, mentions)
         if self.conflict:
             chi = self.conflict(ep.user, ep.text)
-        else:  # a turn that speaks to a one-valued relation the user already has may supersede it
+        else:  # a first-person turn about a one-valued relation the user already has may supersede it
             words = set(re.findall(r"[a-z]+", lowered))
             held = {e.relation for e in self.graph.edges(subject=ep.user) if e.valid_to is None} & FUNCTIONAL
-            chi = 1.0 if any(words & RELATION_WORDS.get(r, set()) for r in held) else 0.0
+            personal = bool(_FIRST_PERSON.search(ep.text))
+            chi = 1.0 if personal and any(words & _RELATION_CUES.get(r, set()) for r in held) else 0.0
         return Unit(uid, int(len(ep.text.split()) * 1.3) + 1, p, mentions, chi, age)
 
     def _derive(self, user: str, text: str, when: date) -> list[Edge]:
@@ -186,9 +207,9 @@ class Memory:
             self.refresh_communities(now)  # communities built before a deletion are never served after it
         names = {e.id: e.name for e in self.graph.entities()}
         mine = [c for c in self._communities if user in c.members]
-        words = set(re.findall(r"[a-z]+", query.lower()))
+        words = _content(query)
         raw = [f"- {ep.text} (said {ep.when.isoformat()})" for ep in self._episodes
-               if ep.user == user and ep.state == "raw" and words & set(re.findall(r"[a-z]+", ep.text.lower()))]
+               if ep.user == user and ep.state == "raw" and words & _content(ep.text)]
         recalled = pack(self.graph.edges(subject=user), mine, query, now, names, self.recall_tokens, raw)
         recalled.epoch = self.epoch
         return recalled
