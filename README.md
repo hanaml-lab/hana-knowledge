@@ -169,7 +169,7 @@ read it, then a scheduler that decides which turns are worth writing into that g
 
 | Date | Paper | What this repo implements | PDF | Paper repo |
 | --- | --- | --- | --- | --- |
-| 2026-04-08 | [LEDGER: Order-Invariant Bitemporal Reconciliation for Knowledge-Graph Memory in Long-Horizon LLM Agents](https://hanaml.com/research/papers/temporal-graphrag-memory) | `graph-memory`: valid and recorded time on every edge, corrections that retract instead of delete, valid-time recall, communities; the reconciliation and BiTempQA are in the paper repo | [PDF](https://hanaml.com/papers/temporal-graphrag-memory.pdf) | [temporal-graphrag-memory](https://github.com/hanaml-lab/temporal-graphrag-memory) |
+| 2025-07-23 | [LEDGER: Order-Invariant Bitemporal Reconciliation for Knowledge-Graph Memory in Long-Horizon LLM Agents](https://hanaml.com/research/papers/temporal-graphrag-memory) | `graph-memory`: valid and recorded time on every edge, corrections that retract instead of delete, valid-time recall, communities. It closes a contradicted edge at write time, which is fast but order-dependent; LEDGER's order-invariant reconciliation and BiTempQA are in the paper repo | [PDF](https://hanaml.com/papers/temporal-graphrag-memory.pdf) | [temporal-graphrag-memory](https://github.com/hanaml-lab/temporal-graphrag-memory) |
 | 2026-07-08 | [InForce: Defeater-Aware Claim Verification for Agentic Retrieval over Amended Financial and Legal Filings](https://hanaml.com/research/papers/agentic-rag-citation-verification) | `retrieval-kit`'s answer loop and `cite-check`: atomic claims, the NLI and verifier cascade, figures recomputed in code, revision; the provision graph, the in-force closure, the defeater search and the conformal threshold are in the paper repo | [PDF](https://hanaml.com/papers/agentic-rag-citation-verification.pdf) | [agentic-rag-citation-verification](https://github.com/hanaml-lab/agentic-rag-citation-verification) |
 | 2026-08-19 | [TIDE: Hazard-Scheduled, Budget-Constrained Memory Consolidation for Long-Horizon LLM Agents](https://hanaml.com/research/papers/agent-memory-consolidation) | `graph_memory.consolidate`: the value of consolidation and the greedy multiple-choice knapsack with the best-single-upgrade check, wired into `Memory`; the hazard model, the LoRA tier and the experiments are in the paper repo | [PDF](https://hanaml.com/papers/agent-memory-consolidation.pdf) | [agent-memory-consolidation](https://github.com/hanaml-lab/agent-memory-consolidation) |
 
@@ -210,12 +210,12 @@ method you use.
   url     = {https://github.com/hanaml-lab/hana-knowledge}
 }
 
-@techreport{agarwal2026bitemporal,
+@techreport{agarwal2025ledger,
   author      = {Agarwal, Manav},
   title       = {LEDGER: Order-Invariant Bitemporal Reconciliation for Knowledge-Graph Memory in Long-Horizon LLM Agents},
   institution = {hanaML},
-  type        = {Technical report},
-  year        = {2026},
+  type        = {Preprint},
+  year        = {2025},
   url         = {https://hanaml.com/research/papers/temporal-graphrag-memory}
 }
 
